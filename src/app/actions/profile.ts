@@ -385,3 +385,37 @@ export async function uploadAvatar(profileId: string, formData: FormData): Promi
     return { success: false, message: error.message || 'Failed to upload avatar.' }
   }
 }
+
+/**
+ * Delete profile picture avatar (Owner or Admin)
+ */
+export async function deleteAvatar(profileId: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, message: 'Unauthorized' }
+
+    // Check if owner or admin
+    const { data: currentProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    const isOwner = user.id === profileId
+    const isAdmin = currentProfile?.role === 'Admin'
+
+    if (!isOwner && !isAdmin) {
+      return { success: false, message: 'Permission denied.' }
+    }
+
+    // Update avatar_url to null
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_url: null })
+      .eq('id', profileId)
+
+    if (error) throw error
+
+    revalidatePath(`/dashboard/employees/${profileId}`)
+    revalidatePath('/dashboard')
+    return { success: true, message: 'Profile picture removed.' }
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Error occurred.' }
+  }
+}

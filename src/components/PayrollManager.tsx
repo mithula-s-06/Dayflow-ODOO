@@ -135,19 +135,7 @@ export default function PayrollManager() {
   const totalPayrollCost = payslips.reduce((acc, p) => acc + p.net_salary, 0)
   const avgNetSalary = payslips.length > 0 ? Math.round(totalPayrollCost / payslips.length) : 0
   
-  // Recharts Dept Cost Breakdown
-  const deptMap: Record<string, number> = {}
-  payslips.forEach(p => {
-    const dept = p.profile?.department || 'General'
-    deptMap[dept] = (deptMap[dept] || 0) + p.net_salary
-  })
-  
-  const chartData = Object.entries(deptMap).map(([name, value]) => ({
-    name,
-    value: Math.round(value)
-  }))
 
-  const PIE_COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
 
   return (
     <div className="space-y-6 font-sans">
@@ -289,50 +277,7 @@ export default function PayrollManager() {
             </Card>
           </div>
 
-          {/* Recharts Department Cost Breakdown */}
-          <Card className="glass border-slate-900 rounded-2xl p-5 flex flex-col items-center">
-            <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-3 self-start">Department Costs</h4>
-            
-            {chartData.length > 0 ? (
-              <div className="w-full h-44 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip 
-                      formatter={(value) => formatCurrency(Number(value))}
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px', fontSize: '10px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="py-12 text-slate-650 text-xs italic">No data to load breakdown.</div>
-            )}
 
-            {/* Chart Legend List */}
-            {chartData.length > 0 && (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full mt-2 border-t border-slate-900 pt-3 text-[9px] text-slate-450 font-semibold uppercase">
-                {chartData.map((entry, index) => (
-                  <div key={index} className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }} />
-                    <span className="truncate">{entry.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
         </div>
 
       </div>

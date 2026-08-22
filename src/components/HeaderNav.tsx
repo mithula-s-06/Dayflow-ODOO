@@ -20,7 +20,8 @@ import {
   ShieldCheck,
   Sun,
   Moon,
-  ChevronUp
+  ChevronUp,
+  ArrowLeft
 } from 'lucide-react'
 
 // Import standard shadcn components we installed
@@ -179,7 +180,7 @@ export default function HeaderNav({ profile, children }: HeaderNavProps) {
               <img
                 src={profile.company.logo_url}
                 alt={profile.company.name}
-                className="h-9 w-9 rounded-xl object-cover border border-slate-800 shadow-md"
+                className="h-9 w-auto max-w-[120px] rounded-xl object-contain border border-slate-800 shadow-md"
               />
             ) : (
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 group-hover:bg-indigo-600/20 group-hover:text-indigo-300 transition-all duration-300">
@@ -260,9 +261,24 @@ export default function HeaderNav({ profile, children }: HeaderNavProps) {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         
         {/* Top Header Bar for Right Side */}
-        <header className="h-16 flex items-center justify-end px-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-30 gap-4 shrink-0">
+        <header className="h-16 flex items-center justify-between px-6 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-30 gap-4 shrink-0">
           
-          {/* Real-time pulse status indicator */}
+          {pathname !== '/dashboard' ? (
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              className="border-slate-800 hover:bg-slate-850 h-9 px-3.5 rounded-xl flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-400 hover:text-slate-200 transition-all"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-4 h-4 shrink-0" />
+              <span>Back</span>
+            </Button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-4">
+            {/* Real-time pulse status indicator */}
           <div className="flex items-center gap-2 bg-slate-900/40 px-3 py-1.5 border border-slate-900 rounded-xl">
             <span className="relative flex h-2 w-2">
               {isCheckedIn ? (
@@ -388,6 +404,7 @@ export default function HeaderNav({ profile, children }: HeaderNavProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
 
         </header>
 

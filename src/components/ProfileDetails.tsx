@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ProfileWithCompany, addSkill, deleteSkill, updateProfileResume, updatePrivateInfo, updateSalaryConfig, uploadCertificate, uploadAvatar } from '@/app/actions/profile'
+import { ProfileWithCompany, addSkill, deleteSkill, updateProfileResume, updatePrivateInfo, updateSalaryConfig, uploadCertificate, uploadAvatar, deleteAvatar } from '@/app/actions/profile'
 import { changePassword } from '@/app/actions/auth'
 import { deleteEmployee } from '@/app/actions/admin'
 import { toast } from 'sonner'
@@ -93,6 +93,8 @@ export default function ProfileDetails({
   const canEditContact = isOwner || isAdmin
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [isAvatarDeleteOpen, setIsAvatarDeleteOpen] = useState(false)
+  const [skillToDelete, setSkillToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDeleteProfile = () => {
     setIsDeleteConfirmOpen(true)
@@ -105,6 +107,33 @@ export default function ProfileDetails({
         toast.success(res.message)
         setIsDeleteConfirmOpen(false)
         router.push('/dashboard')
+        router.refresh()
+      } else {
+        toast.error(res.message)
+      }
+    })
+  }
+
+  const confirmDeleteAvatar = () => {
+    startTransition(async () => {
+      const res = await deleteAvatar(viewedProfile.id)
+      if (res.success) {
+        toast.success(res.message)
+        setIsAvatarDeleteOpen(false)
+        router.refresh()
+      } else {
+        toast.error(res.message)
+      }
+    })
+  }
+
+  const confirmDeleteSkill = () => {
+    if (!skillToDelete) return
+    startTransition(async () => {
+      const res = await deleteSkill(skillToDelete.id, viewedProfile.id)
+      if (res.success) {
+        toast.success(res.message)
+        setSkillToDelete(null)
         router.refresh()
       } else {
         toast.error(res.message)
@@ -250,16 +279,8 @@ export default function ProfileDetails({
     })
   }
 
-  const handleDeleteSkill = async (skillId: string) => {
-    startTransition(async () => {
-      const res = await deleteSkill(skillId, viewedProfile.id)
-      if (res.success) {
-        toast.success(res.message)
-        router.refresh()
-      } else {
-        toast.error(res.message)
-      }
-    })
+  const handleDeleteSkill = async (skillId: string, skillName: string) => {
+    setSkillToDelete({ id: skillId, name: skillName })
   }
 
   const handleSavePrivateInfo = () => {
@@ -334,6 +355,12 @@ export default function ProfileDetails({
     }
   }
 
+  // Handle profile picture deletion
+  const handleDeleteAvatar = () => {
+    if (!canEditContact) return
+    setIsAvatarDeleteOpen(true)
+  }
+
   return (
     <div className="space-y-6 font-sans">
       
@@ -378,19 +405,31 @@ export default function ProfileDetails({
             </div>
             
             {canEditContact && (
-              <label 
-                className="absolute -bottom-1.5 -right-1.5 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-xl cursor-pointer shadow-lg border border-indigo-500/20 transition-all flex items-center justify-center z-20"
-                title="Upload Profile Picture"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleUploadAvatar}
-                  disabled={isPending}
-                  className="hidden" 
-                />
-              </label>
+              <>
+                <label 
+                  className="absolute -bottom-1.5 -right-1.5 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-xl cursor-pointer shadow-lg border border-indigo-500/20 transition-all flex items-center justify-center z-20"
+                  title="Upload Profile Picture"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleUploadAvatar}
+                    disabled={isPending}
+                    className="hidden" 
+                  />
+                </label>
+                {viewedProfile.avatar_url && (
+                  <button
+                    onClick={handleDeleteAvatar}
+                    disabled={isPending}
+                    className="absolute -top-1.5 -right-1.5 bg-rose-600 hover:bg-rose-500 text-white p-2 rounded-xl cursor-pointer shadow-lg border border-rose-500/20 transition-all flex items-center justify-center z-20 animate-in fade-in zoom-in duration-300"
+                    title="Remove Profile Picture"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -440,7 +479,7 @@ export default function ProfileDetails({
           <TabsTrigger value="private" className="rounded-xl text-xs font-semibold py-2 px-4 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
             Private Info
           </TabsTrigger>
-          {isAdmin && (
+          {isAdmin && viewedProfile.role !== 'Admin' && (
             <TabsTrigger value="salary" className="rounded-xl text-xs font-semibold py-2 px-4 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
               Salary Info
             </TabsTrigger>
@@ -563,7 +602,7 @@ export default function ProfileDetails({
                       <span>{skill.name}</span>
                       {canEditContact && (
                         <button 
-                          onClick={() => handleDeleteSkill(skill.id)}
+                          onClick={() => handleDeleteSkill(skill.id, skill.name)}
                           disabled={isPending}
                           className="text-slate-500 hover:text-red-400 focus:outline-none transition-colors p-0.5 rounded-md hover:bg-slate-800 cursor-pointer"
                         >
@@ -628,9 +667,9 @@ export default function ProfileDetails({
                       )}
                       {canEditContact && (
                         <button 
-                          onClick={() => handleDeleteSkill(cert.id)}
+                          onClick={() => handleDeleteSkill(cert.id, cert.name)}
                           disabled={isPending}
-                          className="text-slate-500 hover:text-red-400 focus:outline-none transition-colors p-0.5 rounded-md hover:bg-slate-800 cursor-pointer"
+                          className="text-slate-500 hover:text-red-455 focus:outline-none transition-colors p-0.5 rounded-md hover:bg-slate-800 cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -999,7 +1038,7 @@ export default function ProfileDetails({
         {/* =============================================================
             TAB 3: SALARY INFO (Admin Only)
             ============================================================= */}
-        {isAdmin && (
+        {isAdmin && viewedProfile.role !== 'Admin' && (
           <TabsContent value="salary" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left columns: salary parameters & breakdowns */}
             <div className="lg:col-span-2 space-y-6">
@@ -1428,6 +1467,92 @@ export default function ProfileDetails({
             </Button>
           </div>
 
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Confirm Avatar Deletion Dialog */}
+      <Dialog open={isAvatarDeleteOpen} onOpenChange={setIsAvatarDeleteOpen}>
+        <DialogContent className="max-w-[380px] bg-slate-900 border-slate-855 text-slate-200 rounded-3xl p-6 flex flex-col items-center text-center animate-in fade-in duration-300">
+          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-2 animate-pulse">
+            <Trash2 className="w-6 h-6 text-rose-500" />
+          </div>
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-lg font-heading font-black text-slate-100">
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="text-slate-455 text-xs font-semibold">
+              Do you want to delete this profile picture?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm font-bold text-slate-200 my-4 bg-slate-950/40 border border-slate-850/80 px-4 py-2 rounded-xl w-full truncate">
+            &quot;{viewedProfile.name}&apos;s Photo&quot;
+          </div>
+          <div className="grid grid-cols-2 gap-3 w-full pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsAvatarDeleteOpen(false)}
+              className="border-slate-800 hover:bg-slate-850 text-xs font-bold rounded-xl h-10 cursor-pointer text-slate-400 uppercase tracking-wider"
+            >
+              No
+            </Button>
+            <Button
+              onClick={confirmDeleteAvatar}
+              disabled={isPending}
+              className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl h-10 cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Yes</span>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Confirm Skill Deletion Dialog */}
+      <Dialog open={!!skillToDelete} onOpenChange={(open) => { if (!open) setSkillToDelete(null) }}>
+        <DialogContent className="max-w-[380px] bg-slate-900 border-slate-850 text-slate-200 rounded-3xl p-6 flex flex-col items-center text-center animate-in fade-in duration-300">
+          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-2 animate-pulse">
+            <Trash2 className="w-6 h-6 text-rose-500" />
+          </div>
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-lg font-heading font-black text-slate-100">
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="text-slate-455 text-xs font-semibold">
+              Do you want to delete this item?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm font-bold text-slate-200 my-4 bg-slate-950/40 border border-slate-850/80 px-4 py-2 rounded-xl w-full truncate">
+            &quot;{skillToDelete?.name}&quot;
+          </div>
+          <div className="grid grid-cols-2 gap-3 w-full pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setSkillToDelete(null)}
+              className="border-slate-800 hover:bg-slate-855 text-xs font-bold rounded-xl h-10 cursor-pointer text-slate-400 uppercase tracking-wider"
+            >
+              No
+            </Button>
+            <Button
+              onClick={confirmDeleteSkill}
+              disabled={isPending}
+              className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl h-10 cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Yes</span>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

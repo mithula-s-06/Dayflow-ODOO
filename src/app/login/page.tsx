@@ -86,8 +86,8 @@ export default function LoginPage() {
         {/* Brand Logo & Title */}
         <div className="flex flex-col items-center mb-8 text-center">
           <div className="flex items-center gap-2 p-2 px-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-3 shadow-inner shadow-indigo-500/5">
-            <ShieldCheck className="w-6 h-6 text-indigo-400 animate-pulse" />
-            <span className="font-heading font-bold text-sm tracking-widest text-indigo-200">DAYFLOW</span>
+            <ShieldCheck className="w-6 h-6 text-indigo-500 dark:text-indigo-400 animate-pulse" />
+            <span className="font-heading font-bold text-sm tracking-widest text-indigo-700 dark:text-indigo-200">DAYFLOW</span>
           </div>
           <h1 className="text-3xl font-heading font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-slate-450 to-indigo-600 dark:from-slate-100 dark:via-slate-300 dark:to-indigo-300">
             Welcome Back

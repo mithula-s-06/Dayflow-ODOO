@@ -146,8 +146,8 @@ export default function SignupPage() {
         {/* Brand Logo & Title */}
         <div className="flex flex-col items-center mb-6 text-center">
           <div className="flex items-center gap-2 p-2 px-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-3">
-            <ShieldCheck className="w-6 h-6 text-indigo-400" />
-            <span className="font-heading font-bold text-sm tracking-widest text-indigo-200">DAYFLOW</span>
+            <ShieldCheck className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />
+            <span className="font-heading font-bold text-sm tracking-widest text-indigo-700 dark:text-indigo-200">DAYFLOW</span>
           </div>
           <h1 className="text-2xl font-heading font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-slate-450 to-indigo-600 dark:from-slate-100 dark:via-slate-300 dark:to-indigo-300">
             Create Your Account
