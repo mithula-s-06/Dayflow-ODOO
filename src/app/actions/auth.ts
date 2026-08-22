@@ -264,7 +264,7 @@ export async function signIn(formData: FormData): Promise<AuthResponse> {
         .single()
 
       if (profileError || !profile) {
-        return { success: false, message: 'Invalid Login ID or password.' }
+        return { success: false, message: 'This Login ID is not registered in our database. Please check your credentials.' }
       }
       email = profile.email
       isActivated = profile.is_activated
@@ -276,9 +276,10 @@ export async function signIn(formData: FormData): Promise<AuthResponse> {
         .eq('email', email.toLowerCase())
         .single()
 
-      if (!profileError && profile) {
-        isActivated = profile.is_activated
+      if (profileError || !profile) {
+        return { success: false, message: 'This email is not registered in our database. Please check your credentials.' }
       }
+      isActivated = profile.is_activated
     }
 
     if (!isActivated) {

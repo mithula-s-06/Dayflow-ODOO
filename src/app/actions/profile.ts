@@ -52,7 +52,6 @@ export async function getCurrentUserProfile(): Promise<ProfileWithCompany | null
       .single()
 
     if (error) {
-      console.error('Error fetching current user profile:', error)
       return null
     }
 
