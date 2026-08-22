@@ -190,3 +190,21 @@ html:not(.dark) {
   --color-slate-200: #0f172a;
   --color-slate-100: #020617;
 }
+
+/* Base styles for native date picker calendar icon visibility across light/dark modes */
+input[type="date"] {
+  color-scheme: light;
+}
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: opacity(0.6) invert(0.2);
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: opacity(0.8) invert(0.9);
+}

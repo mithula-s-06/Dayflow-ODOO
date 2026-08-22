@@ -149,7 +149,7 @@ export default function SignupPage() {
             <ShieldCheck className="w-6 h-6 text-indigo-400" />
             <span className="font-heading font-bold text-sm tracking-widest text-indigo-200">DAYFLOW</span>
           </div>
-          <h1 className="text-2xl font-heading font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-300">
+          <h1 className="text-2xl font-heading font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-slate-450 to-indigo-600 dark:from-slate-100 dark:via-slate-300 dark:to-indigo-300">
             Create Your Account
           </h1>
           <p className="text-xs text-slate-400 mt-1.5">
@@ -272,8 +272,8 @@ export default function SignupPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-950/25 border border-rose-900/40 text-[11px] text-rose-300 leading-normal">
-                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 dark:bg-rose-955/25 border border-rose-200 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300 leading-normal">
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                     <span>
                       <strong>Notice:</strong> Your HR department must create your profile placeholder before you can activate your login. Your Employee ID and Email must match the details provided by your manager.
                     </span>

@@ -74,6 +74,10 @@ export default function AdminDashboard({ initialEmployees, currentUserId }: Admi
     pass: string
   } | null>(null)
 
+  // Delete confirm dialog state
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null)
+
   // Filter lists
   const departments = ['ALL', ...Array.from(new Set(employees.map(e => e.department).filter(Boolean)))] as string[]
   const locations = ['ALL', ...Array.from(new Set(employees.map(e => e.location).filter(Boolean)))] as string[]
@@ -137,15 +141,21 @@ export default function AdminDashboard({ initialEmployees, currentUserId }: Admi
   // Handle Employee Deletion from Card
   const handleDelete = (e: React.MouseEvent, empId: string, empName: string) => {
     e.stopPropagation() // Prevent card click navigation
-    if (!window.confirm(`Are you absolutely sure you want to delete ${empName}? This will permanently remove their account and all associated records.`)) {
-      return
-    }
+    setEmployeeToDelete({ id: empId, name: empName })
+    setIsDeleteConfirmOpen(true)
+  }
+
+  // Confirm deletion action
+  const confirmDelete = () => {
+    if (!employeeToDelete) return
 
     startTransition(async () => {
-      const res = await deleteEmployee(empId)
+      const res = await deleteEmployee(employeeToDelete.id)
       if (res.success) {
         toast.success(res.message)
-        setEmployees(employees.filter(emp => emp.id !== empId))
+        setEmployees(employees.filter(emp => emp.id !== employeeToDelete.id))
+        setIsDeleteConfirmOpen(false)
+        setEmployeeToDelete(null)
         router.refresh()
       } else {
         toast.error(res.message)
@@ -382,33 +392,47 @@ export default function AdminDashboard({ initialEmployees, currentUserId }: Admi
                   {/* Manager Selector */}
                   <div className="space-y-1.5">
                     <Label htmlFor="manager" className="text-slate-350 text-xs font-semibold">Reports To (Manager)</Label>
-                    <Select value={managerId} onValueChange={(val) => setManagerId(val || 'NONE')}>
-                      <SelectTrigger className="bg-slate-950/60 border-slate-800 text-slate-200 text-xs rounded-xl h-9">
-                        <SelectValue placeholder="Select manager" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 rounded-xl">
-                        <SelectItem value="NONE" className="text-xs">No Manager</SelectItem>
-                        {employees.map(emp => (
-                          <SelectItem key={emp.id} value={emp.id} className="text-xs">
-                            {emp.name} ({emp.department || 'General'})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select
+                      id="manager"
+                      value={managerId}
+                      onChange={(e) => setManagerId(e.target.value)}
+                      disabled={isPending}
+                      className="w-full bg-slate-950/60 border border-slate-800 text-slate-200 text-xs rounded-xl h-9 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer appearance-none"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgb(156, 163, 175)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '1rem'
+                      }}
+                    >
+                      <option value="NONE" className="bg-slate-900 text-slate-200">No Manager</option>
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id} className="bg-slate-900 text-slate-200">
+                          {emp.name} ({emp.department || 'General'})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Role Dropdown */}
                   <div className="space-y-1.5">
-                    <Label className="text-slate-350 text-xs font-semibold">System Permission Role</Label>
-                    <Select value={role} onValueChange={(val: any) => setRole(val)}>
-                      <SelectTrigger className="bg-slate-950/60 border-slate-800 text-slate-200 text-xs rounded-xl h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 rounded-xl">
-                        <SelectItem value="Employee" className="text-xs">Employee (Standard Access)</SelectItem>
-                        <SelectItem value="Admin" className="text-xs">HR Officer / Admin (Full Access)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="role" className="text-slate-350 text-xs font-semibold">System Permission Role</Label>
+                    <select
+                      id="role"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as any)}
+                      disabled={isPending}
+                      className="w-full bg-slate-950/60 border border-slate-800 text-slate-200 text-xs rounded-xl h-9 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer appearance-none"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgb(156, 163, 175)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '1rem'
+                      }}
+                    >
+                      <option value="Employee" className="bg-slate-900 text-slate-200">Employee (Standard Access)</option>
+                      <option value="Admin" className="bg-slate-900 text-slate-200">HR Officer / Admin (Full Access)</option>
+                    </select>
                   </div>
 
                   {/* Action Buttons */}
@@ -478,9 +502,11 @@ export default function AdminDashboard({ initialEmployees, currentUserId }: Admi
                     <h3 className="font-heading font-black text-sm text-slate-100 truncate group-hover:text-indigo-300 transition-colors">
                       {emp.name}
                     </h3>
-                    <span className="text-[10px] text-slate-400 tracking-wide font-medium mt-0.5 truncate uppercase">
-                      {emp.login_id || 'ID pending'}
-                    </span>
+                    {emp.role !== 'Admin' && (
+                      <span className="text-[10px] text-slate-400 tracking-wide font-medium mt-0.5 truncate uppercase">
+                        {emp.login_id || 'ID pending'}
+                      </span>
+                    )}
                     <span className="text-[9px] text-slate-500 truncate font-semibold mt-1">
                       {emp.role === 'Admin' ? 'HR Admin' : 'Staff Employee'}
                     </span>
@@ -543,6 +569,60 @@ export default function AdminDashboard({ initialEmployees, currentUserId }: Admi
           ))
         )}
       </div>
+
+      {/* Custom Confirm Deletion Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-[380px] bg-slate-900 border-slate-850 text-slate-200 rounded-3xl p-6 flex flex-col items-center text-center animate-in fade-in duration-300">
+          
+          {/* Circular Red Trash Icon Container */}
+          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-2 animate-pulse">
+            <Trash2 className="w-6 h-6 text-rose-500" />
+          </div>
+
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-lg font-heading font-black text-slate-100">
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="text-slate-450 text-xs font-semibold">
+              Do you want to delete this user?
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* User Name Highlight */}
+          <div className="text-sm font-bold text-slate-200 my-4 bg-slate-950/40 border border-slate-850/80 px-4 py-2 rounded-xl w-full truncate">
+            &quot;{employeeToDelete?.name}&quot;
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-3 w-full pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteConfirmOpen(false)
+                setEmployeeToDelete(null)
+              }}
+              className="border-slate-800 hover:bg-slate-850 text-xs font-bold rounded-xl h-10 cursor-pointer text-slate-400 uppercase tracking-wider"
+            >
+              No
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              disabled={isPending}
+              className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl h-10 cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Yes</span>
+              )}
+            </Button>
+          </div>
+
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

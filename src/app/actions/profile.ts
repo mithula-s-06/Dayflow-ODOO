@@ -102,7 +102,12 @@ export async function updateOwnProfile(formData: FormData): Promise<{ success: b
 /**
  * Add a skill or certification
  */
-export async function addSkill(profileId: string, name: string, type: 'skill' | 'certification') {
+export async function addSkill(
+  profileId: string, 
+  name: string, 
+  type: 'skill' | 'certification',
+  documentUrl?: string
+) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -119,7 +124,12 @@ export async function addSkill(profileId: string, name: string, type: 'skill' | 
 
     const { data, error } = await supabase
       .from('skills')
-      .insert({ profile_id: profileId, name, type })
+      .insert({ 
+        profile_id: profileId, 
+        name, 
+        type,
+        document_url: documentUrl || null
+      })
       .select()
       .single()
 
@@ -129,6 +139,43 @@ export async function addSkill(profileId: string, name: string, type: 'skill' | 
     return { success: true, message: 'Skill/Certification added.', data }
   } catch (error: any) {
     return { success: false, message: error.message || 'Error occurred.' }
+  }
+}
+
+/**
+ * Upload a certificate document (supports PDFs and images)
+ */
+export async function uploadCertificate(formData: FormData): Promise<{ success: boolean; url?: string; message: string }> {
+  try {
+    const adminSupabase = createAdminClient()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, message: 'Unauthorized' }
+
+    const file = formData.get('file') as File
+    if (!file) return { success: false, message: 'No file uploaded.' }
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `certificates/${user.id}-${Date.now()}.${fileExt}`
+
+    // Upload to 'avatars' bucket (publicly readable general-purpose files bucket)
+    const { data, error } = await adminSupabase.storage
+      .from('avatars')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      })
+
+    if (error) throw error
+
+    const { data: { publicUrl } } = adminSupabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName)
+
+    return { success: true, url: publicUrl, message: 'File uploaded successfully.' }
+  } catch (error: any) {
+    console.error('uploadCertificate error:', error)
+    return { success: false, message: error.message || 'Failed to upload certificate.' }
   }
 }
 
@@ -281,5 +328,60 @@ export async function updateSalaryConfig(profileId: string, fields: any) {
     return { success: true, message: 'Salary config updated successfully.' }
   } catch (error: any) {
     return { success: false, message: error.message || 'Error occurred.' }
+  }
+}
+
+/**
+ * Upload profile picture avatar (Owner or Admin)
+ */
+export async function uploadAvatar(profileId: string, formData: FormData): Promise<{ success: boolean; url?: string; message: string }> {
+  try {
+    const adminSupabase = createAdminClient()
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) return { success: false, message: 'Unauthorized' }
+
+    // Check if owner or admin
+    const { data: currentProfile } = await supabase.from('profiles').select('role').eq('id', currentUser.id).single()
+    const isOwner = currentUser.id === profileId
+    const isAdmin = currentProfile?.role === 'Admin'
+
+    if (!isOwner && !isAdmin) {
+      return { success: false, message: 'Permission denied.' }
+    }
+
+    const file = formData.get('file') as File
+    if (!file) return { success: false, message: 'No file uploaded.' }
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `avatars/${profileId}-${Date.now()}.${fileExt}`
+
+    const { data, error } = await adminSupabase.storage
+      .from('avatars')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      })
+
+    if (error) throw error
+
+    const { data: { publicUrl } } = adminSupabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName)
+
+    // Update profile table
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', profileId)
+
+    if (updateError) throw updateError
+
+    revalidatePath(`/dashboard/employees/${profileId}`)
+    revalidatePath('/dashboard')
+    return { success: true, url: publicUrl, message: 'Avatar updated successfully.' }
+  } catch (error: any) {
+    console.error('uploadAvatar error:', error)
+    return { success: false, message: error.message || 'Failed to upload avatar.' }
   }
 }

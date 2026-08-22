@@ -375,12 +375,11 @@ export default function HeaderNav({ profile, children }: HeaderNavProps) {
                   </Button>
                 )}
               </div>
-
               <DropdownMenuSeparator className="bg-slate-800 mt-1" />
 
               <DropdownMenuItem 
                 onClick={handleLogout}
-                className="focus:bg-rose-950 focus:text-rose-400 text-rose-450 cursor-pointer py-2 rounded-lg text-xs font-semibold"
+                className="focus:bg-rose-50 dark:focus:bg-rose-950/50 text-rose-600 dark:text-rose-400 focus:text-rose-700 dark:focus:text-rose-300 cursor-pointer py-2 rounded-lg text-xs font-semibold transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <LogOut className="h-3.5 w-3.5 text-rose-500" />

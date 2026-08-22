@@ -89,7 +89,7 @@ export default function LoginPage() {
             <ShieldCheck className="w-6 h-6 text-indigo-400 animate-pulse" />
             <span className="font-heading font-bold text-sm tracking-widest text-indigo-200">DAYFLOW</span>
           </div>
-          <h1 className="text-3xl font-heading font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-300">
+          <h1 className="text-3xl font-heading font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-200 via-slate-450 to-indigo-600 dark:from-slate-100 dark:via-slate-300 dark:to-indigo-300">
             Welcome Back
           </h1>
           <p className="text-sm text-slate-400 mt-2 max-w-[280px]">

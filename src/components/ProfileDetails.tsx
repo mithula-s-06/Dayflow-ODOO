@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ProfileWithCompany, addSkill, deleteSkill, updateProfileResume, updatePrivateInfo, updateSalaryConfig } from '@/app/actions/profile'
+import { ProfileWithCompany, addSkill, deleteSkill, updateProfileResume, updatePrivateInfo, updateSalaryConfig, uploadCertificate, uploadAvatar } from '@/app/actions/profile'
 import { changePassword } from '@/app/actions/auth'
 import { deleteEmployee } from '@/app/actions/admin'
 import { toast } from 'sonner'
@@ -11,6 +11,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -54,7 +61,7 @@ const Textarea = TextareaInput
 interface ProfileDetailsProps {
   viewedProfile: ProfileWithCompany
   currentUser: { id: string; role: 'Admin' | 'Employee' }
-  skills: { id: string; name: string; type: 'skill' | 'certification' }[]
+  skills: { id: string; name: string; type: 'skill' | 'certification'; document_url?: string | null }[]
   salaryConfig: {
     monthly_wage: number
     working_days_per_week: number
@@ -85,15 +92,18 @@ export default function ProfileDetails({
   const canEditAll = isAdmin
   const canEditContact = isOwner || isAdmin
 
-  const handleDeleteProfile = () => {
-    if (!window.confirm(`Are you absolutely sure you want to delete ${viewedProfile.name}? This will permanently remove their account and all associated records (attendance, time off, salary configs, etc.).`)) {
-      return
-    }
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
+  const handleDeleteProfile = () => {
+    setIsDeleteConfirmOpen(true)
+  }
+
+  const confirmDelete = () => {
     startTransition(async () => {
       const res = await deleteEmployee(viewedProfile.id)
       if (res.success) {
         toast.success(res.message)
+        setIsDeleteConfirmOpen(false)
         router.push('/dashboard')
         router.refresh()
       } else {
@@ -111,6 +121,7 @@ export default function ProfileDetails({
   // Add Skill states
   const [newSkillName, setNewSkillName] = useState('')
   const [newCertName, setNewCertName] = useState('')
+  const [certFile, setCertFile] = useState<File | null>(null)
 
   // --- Private Info Tab States ---
   const [isEditingPrivate, setIsEditingPrivate] = useState(false)
@@ -203,13 +214,34 @@ export default function ProfileDetails({
 
   const handleAddSkill = async (type: 'skill' | 'certification') => {
     const nameVal = type === 'skill' ? newSkillName : newCertName
-    if (!nameVal.trim()) return
+    if (!nameVal.trim()) {
+      toast.error('Please enter a name first.')
+      return
+    }
 
     startTransition(async () => {
-      const res = await addSkill(viewedProfile.id, nameVal.trim(), type)
+      let documentUrl: string | undefined = undefined
+
+      if (type === 'certification' && certFile) {
+        const formData = new FormData()
+        formData.append('file', certFile)
+        const uploadRes = await uploadCertificate(formData)
+        if (uploadRes.success) {
+          documentUrl = uploadRes.url
+        } else {
+          toast.error(`File upload failed: ${uploadRes.message}`)
+          return
+        }
+      }
+
+      const res = await addSkill(viewedProfile.id, nameVal.trim(), type, documentUrl)
       if (res.success) {
-        if (type === 'skill') setNewSkillName('')
-        else setNewCertName('')
+        if (type === 'skill') {
+          setNewSkillName('')
+        } else {
+          setNewCertName('')
+          setCertFile(null)
+        }
         toast.success(res.message)
         router.refresh()
       } else {
@@ -284,29 +316,22 @@ export default function ProfileDetails({
     })
   }
 
-  // Handle mock profile picture edit
-  const handleUpdateAvatar = () => {
-    if (!canEditContact) return
-    const randomId = Math.floor(Math.random() * 1000)
-    const mockAvatar = `https://images.unsplash.com/photo-${randomId % 2 === 0 ? '1494790108377-be9c29b29330' : '1535713875002-d1d0cf377fde'}?auto=format&fit=crop&w=150&h=150&q=80`
-    
-    startTransition(async () => {
-      const formData = new FormData()
-      formData.append('phone', phone)
-      formData.append('address', residingAddress)
-      formData.append('avatarUrl', mockAvatar)
-      const res = await updatePrivateInfo(viewedProfile.id, { 
-        name, phone, residingAddress, department, location, managerId, dateOfJoining,
-        dateOfBirth, nationality, gender, maritalStatus, bankName, accountNumber, ifscCode, panNo, uanNo,
-        avatarUrl: mockAvatar
+  // Handle user uploaded profile picture
+  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      startTransition(async () => {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await uploadAvatar(viewedProfile.id, formData)
+        if (res.success) {
+          toast.success('Profile picture updated successfully!')
+          router.refresh()
+        } else {
+          toast.error(res.message)
+        }
       })
-      if (res.success) {
-        toast.success('Avatar updated!')
-        router.refresh()
-      } else {
-        toast.error(res.message)
-      }
-    })
+    }
   }
 
   return (
@@ -340,25 +365,32 @@ export default function ProfileDetails({
         )}
 
         <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
-          {/* Avatar Picture (with pencil hover) */}
-          <div className="relative group shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden flex items-center justify-center">
-            {viewedProfile.avatar_url ? (
-              <img src={viewedProfile.avatar_url} alt={viewedProfile.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-2xl font-black text-indigo-400">
-                {viewedProfile.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </span>
-            )}
+          {/* Avatar Picture with Bottom-Right Edit Button */}
+          <div className="relative shrink-0">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden flex items-center justify-center">
+              {viewedProfile.avatar_url ? (
+                <img src={viewedProfile.avatar_url} alt={viewedProfile.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl font-black text-indigo-400">
+                  {viewedProfile.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </span>
+              )}
+            </div>
             
             {canEditContact && (
-              <button 
-                onClick={handleUpdateAvatar}
-                disabled={isPending}
-                className="absolute inset-0 bg-slate-950/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-xs font-semibold text-white gap-1"
+              <label 
+                className="absolute -bottom-1.5 -right-1.5 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-xl cursor-pointer shadow-lg border border-indigo-500/20 transition-all flex items-center justify-center z-20"
+                title="Upload Profile Picture"
               >
-                <Edit2 className="w-4 h-4 text-white" />
-                <span>Edit</span>
-              </button>
+                <Edit2 className="w-3.5 h-3.5" />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleUploadAvatar}
+                  disabled={isPending}
+                  className="hidden" 
+                />
+              </label>
             )}
           </div>
 
@@ -369,10 +401,14 @@ export default function ProfileDetails({
                 {viewedProfile.name}
               </h1>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs font-medium text-slate-400 mt-1">
-                <span className="bg-slate-900 border border-slate-850 px-2.5 py-0.5 rounded-full text-indigo-400 font-bold uppercase tracking-wider text-[10px]">
-                  {viewedProfile.login_id || 'ID Pending'}
-                </span>
-                <span>•</span>
+                {viewedProfile.role !== 'Admin' && (
+                  <>
+                    <span className="bg-slate-900 border border-slate-850 px-2.5 py-0.5 rounded-full text-indigo-400 font-bold uppercase tracking-wider text-[10px]">
+                      {viewedProfile.login_id || 'ID Pending'}
+                    </span>
+                    <span>•</span>
+                  </>
+                )}
                 <span>{viewedProfile.role === 'Admin' ? 'HR Administrator' : 'Staff Employee'}</span>
               </div>
             </div>
@@ -576,9 +612,20 @@ export default function ProfileDetails({
                   certItems.map(cert => (
                     <span 
                       key={cert.id} 
-                      className="inline-flex items-center gap-1 bg-slate-900 border border-slate-800 text-slate-300 pl-3 pr-2 py-1 rounded-lg text-xs font-medium"
+                      className="inline-flex items-center gap-1.5 bg-slate-900 border border-slate-800 text-slate-300 pl-3 pr-2 py-1 rounded-lg text-xs font-medium group/tag"
                     >
                       <span>{cert.name}</span>
+                      {cert.document_url && (
+                        <a 
+                          href={cert.document_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-indigo-400 hover:text-indigo-300 cursor-pointer flex items-center justify-center"
+                          title="View Certificate"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </a>
+                      )}
                       {canEditContact && (
                         <button 
                           onClick={() => handleDeleteSkill(cert.id)}
@@ -594,24 +641,53 @@ export default function ProfileDetails({
               </div>
 
               {canEditContact && (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Add certification..."
-                    value={newCertName}
-                    onChange={(e) => setNewCertName(e.target.value)}
-                    disabled={isPending}
-                    className="bg-slate-950/60 border-slate-800 text-slate-100 placeholder:text-slate-650 rounded-xl text-xs h-[34px]"
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddSkill('certification') }}
-                  />
-                  <Button 
-                    onClick={() => handleAddSkill('certification')}
-                    disabled={isPending}
-                    size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white p-2 h-[34px] w-[34px] shrink-0 rounded-xl flex items-center justify-center cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Add certification..."
+                      value={newCertName}
+                      onChange={(e) => setNewCertName(e.target.value)}
+                      disabled={isPending}
+                      className="bg-slate-950/60 border-slate-800 text-slate-100 placeholder:text-slate-650 rounded-xl text-xs h-[34px]"
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAddSkill('certification') }}
+                    />
+                    <Button 
+                      onClick={() => handleAddSkill('certification')}
+                      disabled={isPending}
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white p-2 h-[34px] w-[34px] shrink-0 rounded-xl flex items-center justify-center cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-955/20 border border-dashed border-slate-800 p-2 rounded-xl">
+                    <label className="text-[10px] font-bold text-slate-400 cursor-pointer hover:text-indigo-400 flex items-center gap-1.5 w-full">
+                      <span className="bg-slate-905 border border-slate-800 px-2 py-1 rounded-md text-[9px] uppercase tracking-wider text-slate-300">Choose File</span>
+                      <span className="truncate max-w-[200px] font-normal">
+                        {certFile ? certFile.name : 'Optional: Upload certificate document (PDF, PNG, JPG)'}
+                      </span>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.png,.jpg,.jpeg" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setCertFile(e.target.files[0])
+                          }
+                        }}
+                        className="hidden" 
+                      />
+                    </label>
+                    {certFile && (
+                      <button 
+                        type="button" 
+                        onClick={() => setCertFile(null)} 
+                        className="text-slate-500 hover:text-rose-450 text-[10px] uppercase font-bold cursor-pointer shrink-0"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </Card>
@@ -716,17 +792,24 @@ export default function ProfileDetails({
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Manager</Label>
                   {isEditingPrivate && canEditAll ? (
-                    <Select value={managerId} onValueChange={(val) => setManagerId(val || 'NONE')}>
-                      <SelectTrigger className="bg-slate-955/60 border-slate-800 text-slate-100 text-xs rounded-xl h-9">
-                        <SelectValue placeholder="Select manager" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 rounded-xl">
-                        <SelectItem value="NONE" className="text-xs">No Manager</SelectItem>
-                        {managersList.map(m => (
-                          <SelectItem key={m.id} value={m.id} className="text-xs">{m.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <select
+                      value={managerId}
+                      onChange={(e) => setManagerId(e.target.value)}
+                      className="w-full bg-slate-955/60 border border-slate-800 text-slate-100 text-xs rounded-xl h-9 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer appearance-none"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgb(156, 163, 175)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '1rem'
+                      }}
+                    >
+                      <option value="NONE" className="bg-slate-900 text-slate-200">No Manager</option>
+                      {managersList.map(m => (
+                        <option key={m.id} value={m.id} className="bg-slate-900 text-slate-200">
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <Input
                       type="text"
@@ -1294,6 +1377,59 @@ export default function ProfileDetails({
         )}
 
       </Tabs>
+
+      {/* Custom Confirm Deletion Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-[380px] bg-slate-900 border-slate-850 text-slate-200 rounded-3xl p-6 flex flex-col items-center text-center animate-in fade-in duration-300">
+          
+          {/* Circular Red Trash Icon Container */}
+          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-2 animate-pulse">
+            <Trash2 className="w-6 h-6 text-rose-500" />
+          </div>
+
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-lg font-heading font-black text-slate-100">
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription className="text-slate-455 text-xs font-semibold">
+              Do you want to delete this user?
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* User Name Highlight */}
+          <div className="text-sm font-bold text-slate-200 my-4 bg-slate-950/40 border border-slate-850/80 px-4 py-2 rounded-xl w-full truncate">
+            &quot;{viewedProfile.name}&quot;
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-3 w-full pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteConfirmOpen(false)
+              }}
+              className="border-slate-800 hover:bg-slate-850 text-xs font-bold rounded-xl h-10 cursor-pointer text-slate-400 uppercase tracking-wider"
+            >
+              No
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              disabled={isPending}
+              className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl h-10 cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <span>Yes</span>
+              )}
+            </Button>
+          </div>
+
+        </DialogContent>
+      </Dialog>
 
     </div>
   )
