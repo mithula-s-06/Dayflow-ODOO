@@ -609,6 +609,7 @@ export default function TimeOffManager({
                   <TableHead className="text-xs text-slate-400 font-bold uppercase tracking-wider">Start Date</TableHead>
                   <TableHead className="text-xs text-slate-400 font-bold uppercase tracking-wider">End Date</TableHead>
                   <TableHead className="text-xs text-slate-400 font-bold uppercase tracking-wider">Duration</TableHead>
+                  <TableHead className="text-xs text-slate-400 font-bold uppercase tracking-wider">Remarks</TableHead>
                   <TableHead className="text-xs text-slate-400 font-bold uppercase tracking-wider">Certificate</TableHead>
                   <TableHead className="text-xs text-slate-400 font-bold uppercase tracking-wider">Admin Comment</TableHead>
                   <TableHead className="text-xs text-slate-400 font-bold uppercase tracking-wider text-right">Actions</TableHead>
@@ -617,7 +618,7 @@ export default function TimeOffManager({
               <TableBody>
                 {requests.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={8} className="py-12 text-center text-slate-500 text-xs font-semibold">
+                    <TableCell colSpan={9} className="py-12 text-center text-slate-500 text-xs font-semibold">
                       <CheckCircle className="w-8 h-8 text-emerald-600/80 mx-auto mb-2" />
                       <span>No leave requests submitted yet.</span>
                     </TableCell>
@@ -637,6 +638,9 @@ export default function TimeOffManager({
                       <TableCell className="text-slate-350">{formatDate(req.start_date)}</TableCell>
                       <TableCell className="text-slate-350">{formatDate(req.end_date)}</TableCell>
                       <TableCell className="text-indigo-400 font-mono">{req.num_days} days</TableCell>
+                      <TableCell className="text-slate-300 max-w-[150px] truncate" title={req.remarks || ''}>
+                        {req.remarks || '--'}
+                      </TableCell>
                       <TableCell>
                         {req.attachment_url ? (
                           <a 
