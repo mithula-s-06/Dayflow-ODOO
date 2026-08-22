@@ -21,7 +21,7 @@ export async function getCheckInStatus(): Promise<AttendanceStatus> {
       return { isCheckedIn: false, checkInTime: null, checkOutTime: null, todayRecord: null }
     }
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
 
     const { data, error } = await supabase
       .from('attendance')
@@ -62,7 +62,7 @@ export async function clockIn(): Promise<{ success: boolean; message: string }> 
       return { success: false, message: 'Unauthorized.' }
     }
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
     const nowIso = new Date().toISOString()
 
     // Verify if already checked in today
@@ -114,7 +114,7 @@ export async function clockOut(): Promise<{ success: boolean; message: string }>
       return { success: false, message: 'Unauthorized.' }
     }
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
     const nowIso = new Date().toISOString()
 
     // Fetch active check-in record
@@ -174,9 +174,9 @@ export async function getMyAttendanceLogs(month: number, year: number) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { logs: [], presentCount: 0, leaveCount: 0, totalWorkingDays: 20 }
 
-    // Start and end of the month
-    const startOfMonth = new Date(year, month - 1, 1).toISOString().split('T')[0]
-    const endOfMonth = new Date(year, month, 0).toISOString().split('T')[0]
+    // Start and end of the month (mathematical construction)
+    const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
+    const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
 
     // Fetch attendance logs
     const { data: logs, error } = await supabase

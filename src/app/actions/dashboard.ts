@@ -40,7 +40,7 @@ export async function getEmployeesWithStatus(): Promise<EmployeeWithStatus[]> {
       return []
     }
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
 
     // Fetch all profiles in company
     const { data: profiles, error: profError } = await supabase

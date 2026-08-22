@@ -137,6 +137,12 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+html:not(.dark) .glass {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
 .glass-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -146,4 +152,41 @@
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 30px rgb(0 0 0 / 40%), inset 0 1px 1px rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
+}
+
+html:not(.dark) .glass-hover:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+html:not(.dark) {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: rgba(255, 255, 255, 0.7);
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.06);
+  --ring: #4f46e5;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-border: rgba(0, 0, 0, 0.08);
+
+  --color-slate-950: #f8fafc;
+  --color-slate-900: #ffffff;
+  --color-slate-850: #f1f5f9;
+  --color-slate-800: #e2e8f0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-650: #94a3b8;
+  --color-slate-600: #64748b;
+  --color-slate-550: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-450: #475569;
+  --color-slate-400: #334155;
+  --color-slate-350: #1e293b;
+  --color-slate-300: #0f172a;
+  --color-slate-200: #0f172a;
+  --color-slate-100: #020617;
 }

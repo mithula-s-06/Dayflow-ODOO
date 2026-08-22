@@ -29,7 +29,7 @@ export async function signUpHR(formData: FormData): Promise<AuthResponse> {
   const phone = formData.get('phone') as string
   const password = formData.get('password') as string
   const confirmPassword = formData.get('confirmPassword') as string
-  const logoUrl = formData.get('logoUrl') as string || null
+  const logoFile = formData.get('logoFile') as File | null
 
   if (!companyName || !name || !email || !password) {
     return { success: false, message: 'All required fields must be filled.' }
@@ -48,6 +48,37 @@ export async function signUpHR(formData: FormData): Promise<AuthResponse> {
 
   try {
     const adminSupabase = createAdminClient()
+    let logoUrl: string | null = null
+
+    // Upload logo file if provided
+    if (logoFile && logoFile.size > 0) {
+      try {
+        await adminSupabase.storage.createBucket('logos', { public: true })
+      } catch (e) {
+        // Ignore if exists
+      }
+
+      const fileExt = logoFile.name.split('.').pop() || 'png'
+      const fileName = `${Math.random().toString(36).slice(2)}.${fileExt}`
+      const fileBuffer = Buffer.from(await logoFile.arrayBuffer())
+
+      const { data: uploadData, error: uploadError } = await adminSupabase.storage
+        .from('logos')
+        .upload(fileName, fileBuffer, {
+          contentType: logoFile.type,
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = adminSupabase.storage
+          .from('logos')
+          .getPublicUrl(fileName)
+        logoUrl = publicUrl
+      } else {
+        console.error('Logo upload error:', uploadError)
+      }
+    }
 
     // 1. Create company first (using admin client to bypass RLS)
     const { data: company, error: companyError } = await adminSupabase
@@ -92,7 +123,7 @@ export async function signUpHR(formData: FormData): Promise<AuthResponse> {
         name,
         phone,
         role: 'Admin',
-        date_of_joining: new Date().toISOString().split('T')[0],
+        date_of_joining: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
       })
 
     if (profileError) {

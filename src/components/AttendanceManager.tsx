@@ -46,7 +46,7 @@ export default function AttendanceManager({ role }: AttendanceManagerProps) {
   const [totalWorkingDays, setTotalWorkingDays] = useState(20)
 
   // --- ADMIN STATE ---
-  const [adminDate, setAdminDate] = useState(new Date().toISOString().split('T')[0])
+  const [adminDate, setAdminDate] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }))
   const [adminLogs, setAdminLogs] = useState<any[]>([])
   const [adminSearch, setAdminSearch] = useState('')
 
@@ -109,13 +109,13 @@ export default function AttendanceManager({ role }: AttendanceManagerProps) {
   const handlePrevDay = () => {
     const d = new Date(adminDate)
     d.setDate(d.getDate() - 1)
-    setAdminDate(d.toISOString().split('T')[0])
+    setAdminDate(d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }))
   }
 
   const handleNextDay = () => {
     const d = new Date(adminDate)
     d.setDate(d.getDate() + 1)
-    setAdminDate(d.toISOString().split('T')[0])
+    setAdminDate(d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }))
   }
 
   // --- FORMATTING HELPERS ---

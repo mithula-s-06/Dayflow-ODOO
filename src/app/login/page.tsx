@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useTransition } from 'react'
+import React, { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn } from '@/app/actions/auth'
@@ -9,13 +9,35 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Mail, Lock, ShieldCheck, ArrowRight } from 'lucide-react'
+import { Loader2, Mail, Lock, ShieldCheck, ArrowRight, Eye, EyeOff, Sun, Moon } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [loginInput, setLoginInput] = useState('')
   const [password, setPassword] = useState('')
+  
+  // Show / Hide password state
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Theme State
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  useEffect(() => {
+    const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+    setTheme(activeTheme)
+  }, [])
+
+  const toggleTheme = () => {
+    if (theme === 'dark') {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+      setTheme('light')
+    } else {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+      setTheme('dark')
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +62,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-slate-950 font-sans">
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-background text-foreground font-sans">
+      {/* Fixed Glowing Theme Toggle Button */}
+      <button
+        onClick={toggleTheme}
+        className={`fixed top-4 right-4 z-50 p-2.5 rounded-full border cursor-pointer transition-all duration-300 ${
+          theme === 'dark'
+            ? 'bg-slate-950/80 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]'
+            : 'bg-white/80 border-sky-400/30 text-sky-600 shadow-[0_0_15px_rgba(56,189,248,0.2)] hover:border-sky-400 hover:shadow-[0_0_20px_rgba(56,189,248,0.4)]'
+        }`}
+        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+      >
+        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+
       {/* Background Ambient Glows */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-[150px] pointer-events-none" />
@@ -103,14 +138,21 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isPending}
-                    className="pl-10 bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all duration-300 rounded-lg text-sm"
+                    className="pl-10 pr-10 bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all duration-300 rounded-lg text-sm w-full"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 

@@ -82,10 +82,13 @@ export async function submitTimeOffRequest(formData: FormData): Promise<{ succes
       return { success: false, message: 'Missing required fields.' }
     }
 
-    const startObj = new Date(startDate)
-    const endObj = new Date(endDate)
-    if (endObj < startObj) {
-      return { success: false, message: 'End date cannot be before start date.' }
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+    if (startDate < todayStr) {
+      return { success: false, message: 'Start date must be either today or a future date.' }
+    }
+
+    if (endDate < startDate) {
+      return { success: false, message: 'End date must be on or after the start date.' }
     }
 
     // Calculate business days
@@ -163,9 +166,9 @@ export async function getCompanyTimeOffRequests(): Promise<any[]> {
       .from('time_off_requests')
       .select(`
         *,
-        profile:profiles!inner(name, department, location, company_id)
+        profile:profiles!time_off_requests_profile_id_fkey!inner(name, department, location, company_id)
       `)
-      .eq('profile.company_id', currentProfile.company_id)
+      .eq('profiles.company_id', currentProfile.company_id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -257,7 +260,7 @@ export async function approveTimeOffRequest(
     while (cur <= end) {
       const dayOfWeek = cur.getDay()
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        const dateStr = cur.toISOString().split('T')[0]
+        const dateStr = cur.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
         
         // Upsert attendance day as 'Leave'
         await adminSupabase

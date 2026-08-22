@@ -26,10 +26,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${inter.variable} dark h-full antialiased`}>
-      <body className="min-h-full bg-slate-950 text-slate-100 font-sans antialiased flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200">
+    <html lang="en" className={`${outfit.variable} ${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const theme = localStorage.getItem('theme') || 'dark';
+                if (theme === 'light') {
+                  document.documentElement.classList.remove('dark');
+                } else {
+                  document.documentElement.classList.add('dark');
+                }
+              })()
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full font-sans antialiased flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200">
         {children}
-        <Toaster position="top-right" theme="dark" closeButton richColors />
+        <Toaster position="top-right" theme="system" closeButton richColors />
       </body>
     </html>
   );

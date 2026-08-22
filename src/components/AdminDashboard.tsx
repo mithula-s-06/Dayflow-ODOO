@@ -62,7 +62,7 @@ export default function AdminDashboard({ initialEmployees }: AdminDashboardProps
   const [role, setRole] = useState<'Admin' | 'Employee'>('Employee')
   const [department, setDepartment] = useState('')
   const [location, setLocation] = useState('')
-  const [dateOfJoining, setDateOfJoining] = useState(new Date().toISOString().split('T')[0])
+  const [dateOfJoining, setDateOfJoining] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }))
   const [monthlyWage, setMonthlyWage] = useState('')
   const [managerId, setManagerId] = useState('NONE')
 

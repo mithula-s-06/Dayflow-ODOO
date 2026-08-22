@@ -17,7 +17,9 @@ import {
   Building2, 
   Play, 
   Square,
-  ShieldCheck
+  ShieldCheck,
+  Sun,
+  Moon
 } from 'lucide-react'
 
 // Import standard shadcn components we installed
@@ -30,6 +32,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { updateCompanyDetails } from '@/app/actions/admin'
 
 interface HeaderNavProps {
   profile: ProfileWithCompany
@@ -40,9 +52,58 @@ export default function HeaderNav({ profile }: HeaderNavProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   
+  // Theme State
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+
+  // Company Settings Dialog state
+  const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false)
+  const [companyName, setCompanyName] = useState(profile.company?.name || '')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  
   // Attendance state
   const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [checkInTime, setCheckInTime] = useState<string | null>(null)
+
+  useEffect(() => {
+    const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+    setTheme(activeTheme)
+  }, [])
+
+  const toggleTheme = () => {
+    if (theme === 'dark') {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+      setTheme('light')
+    } else {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+      setTheme('dark')
+    }
+  }
+
+  const handleSaveCompany = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!companyName.trim()) {
+      toast.error('Company Name cannot be empty.')
+      return
+    }
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.append('companyName', companyName)
+      if (logoFile) {
+        formData.append('logoFile', logoFile)
+      }
+
+      const res = await updateCompanyDetails(formData)
+      if (res.success) {
+        setIsCompanyDialogOpen(false)
+        toast.success(res.message)
+        router.refresh()
+      } else {
+        toast.error(res.message)
+      }
+    })
+  }
   
   // Load initial check-in status
   useEffect(() => {
@@ -180,8 +241,22 @@ export default function HeaderNav({ profile }: HeaderNavProps) {
             </nav>
           </div>
 
-          {/* RIGHT: ATTENDANCE STATUS DOT & AVATAR MENU */}
+          {/* RIGHT: ATTENDANCE STATUS DOT, THEME TOGGLER & AVATAR MENU */}
           <div className="flex items-center gap-4">
+            
+            {/* Theme Toggle Button */}
+            <Button
+              variant="outline"
+              onClick={toggleTheme}
+              className="border-slate-800 hover:bg-slate-850 p-2 h-9 w-9 rounded-xl flex items-center justify-center cursor-pointer shrink-0 text-slate-400 hover:text-slate-200"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-500" />
+              )}
+            </Button>
             
             {/* Real-time pulse status indicator */}
             <div className="flex items-center gap-2 bg-slate-900/40 px-3 py-1.5 border border-slate-900 rounded-xl">
@@ -226,8 +301,6 @@ export default function HeaderNav({ profile }: HeaderNavProps) {
                   </span>
                 </DropdownMenuLabel>
                 
-                <DropdownMenuSeparator className="bg-slate-800" />
-                
                 <DropdownMenuItem 
                   render={
                     <Link href={`/dashboard/employees/${profile.id}`} className="flex items-center gap-2 focus:bg-slate-850 focus:text-indigo-400 cursor-pointer py-2 rounded-lg text-xs font-medium" />
@@ -236,6 +309,18 @@ export default function HeaderNav({ profile }: HeaderNavProps) {
                   <User className="h-3.5 w-3.5 text-slate-400" />
                   My Profile
                 </DropdownMenuItem>
+
+                {profile.role === 'Admin' && (
+                  <DropdownMenuItem 
+                    onClick={() => setIsCompanyDialogOpen(true)}
+                    className="focus:bg-slate-850 focus:text-indigo-400 cursor-pointer py-2 rounded-lg text-xs font-medium"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                      <span>Company Settings</span>
+                    </div>
+                  </DropdownMenuItem>
+                )}
 
                 <DropdownMenuSeparator className="bg-slate-800" />
 
@@ -285,6 +370,75 @@ export default function HeaderNav({ profile }: HeaderNavProps) {
 
         </div>
       </div>
+
+      {/* Company Settings Dialog Modal */}
+      <Dialog open={isCompanyDialogOpen} onOpenChange={setIsCompanyDialogOpen}>
+        <DialogContent className="max-w-md bg-slate-900 border-slate-850 text-slate-200 rounded-2xl shadow-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base font-heading font-bold text-slate-100">
+              Company Settings
+            </DialogTitle>
+            <DialogDescription className="text-slate-450 text-xs">
+              Update your company name and upload your branding logo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveCompany} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="compName" className="text-slate-350 text-xs font-semibold">Company Name</Label>
+              <Input
+                id="compName"
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                disabled={isPending}
+                className="bg-slate-950/60 border-slate-800 text-slate-100 rounded-xl text-xs h-9"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="compLogo" className="text-slate-350 text-xs font-semibold">Company Logo</Label>
+              <input
+                id="compLogo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null
+                  setLogoFile(file)
+                }}
+                disabled={isPending}
+                className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 file:cursor-pointer bg-slate-950/60 border border-slate-800 rounded-xl p-1"
+              />
+              {profile.company?.logo_url && !logoFile && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-[10px] text-slate-500 font-medium">Current Logo:</span>
+                  <img src={profile.company.logo_url} alt="Logo" className="h-6 w-auto object-contain rounded" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCompanyDialogOpen(false)}
+                disabled={isPending}
+                className="border-slate-800 text-xs rounded-xl h-9 cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl h-9 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {isPending ? 'Saving...' : 'Save Settings'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </header>
   )
 }

@@ -34,8 +34,8 @@ export async function generatePayslips(month: number, year: number): Promise<Pay
     const companyId = currentProfile.company_id
 
     // Start and end of month
-    const startOfMonth = new Date(year, month - 1, 1).toISOString().split('T')[0]
-    const endOfMonth = new Date(year, month, 0).toISOString().split('T')[0]
+    const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
+    const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
 
     // Fetch all profiles in company
     const { data: employees, error: empError } = await adminSupabase

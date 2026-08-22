@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, ShieldCheck, ArrowRight, Building2, UserCheck, Upload, AlertCircle } from 'lucide-react'
+import { Loader2, ShieldCheck, ArrowRight, Building2, UserCheck, Upload, AlertCircle, Eye, EyeOff, Sun, Moon } from 'lucide-react'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -23,13 +23,38 @@ export default function SignupPage() {
   const [hrPhone, setHrPhone] = useState('')
   const [hrPassword, setHrPassword] = useState('')
   const [hrConfirmPassword, setHrConfirmPassword] = useState('')
-  const [companyLogoUrl, setCompanyLogoUrl] = useState('')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
 
   // Employee Activation Form states
   const [employeeId, setEmployeeId] = useState('')
   const [empEmail, setEmpEmail] = useState('')
   const [empPassword, setEmpPassword] = useState('')
   const [empConfirmPassword, setEmpConfirmPassword] = useState('')
+
+  // Show / Hide password states
+  const [showEmpPass, setShowEmpPass] = useState(false)
+  const [showEmpConfirmPass, setShowEmpConfirmPass] = useState(false)
+  const [showHRPass, setShowHRPass] = useState(false)
+  const [showHRConfirmPass, setShowHRConfirmPass] = useState(false)
+
+  // Theme State
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  React.useEffect(() => {
+    const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+    setTheme(activeTheme)
+  }, [])
+
+  const toggleTheme = () => {
+    if (theme === 'dark') {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+      setTheme('light')
+    } else {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+      setTheme('dark')
+    }
+  }
 
   // HR Sign Up Submit
   const handleHRSignedUp = async (e: React.FormEvent) => {
@@ -52,7 +77,9 @@ export default function SignupPage() {
       formData.append('phone', hrPhone)
       formData.append('password', hrPassword)
       formData.append('confirmPassword', hrConfirmPassword)
-      formData.append('logoUrl', companyLogoUrl)
+      if (logoFile) {
+        formData.append('logoFile', logoFile)
+      }
 
       const result = await signUpHR(formData)
       if (result.success) {
@@ -94,16 +121,22 @@ export default function SignupPage() {
     })
   }
 
-  // Handle mock logo select/gen
-  const handleGenerateMockLogo = () => {
-    const randomId = Math.floor(Math.random() * 1000)
-    const mockUrl = `https://picsum.photos/id/${randomId % 100}/200/200`
-    setCompanyLogoUrl(mockUrl)
-    toast.success('Mock company logo generated!')
-  }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-slate-950 font-sans">
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-background text-foreground font-sans">
+      {/* Fixed Glowing Theme Toggle Button */}
+      <button
+        onClick={toggleTheme}
+        className={`fixed top-4 right-4 z-50 p-2.5 rounded-full border cursor-pointer transition-all duration-300 ${
+          theme === 'dark'
+            ? 'bg-slate-950/80 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]'
+            : 'bg-white/80 border-sky-400/30 text-sky-600 shadow-[0_0_15px_rgba(56,189,248,0.2)] hover:border-sky-400 hover:shadow-[0_0_20px_rgba(56,189,248,0.4)]'
+        }`}
+        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+      >
+        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+
       {/* Background Ambient Glows */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-[150px] pointer-events-none" />
@@ -193,31 +226,49 @@ export default function SignupPage() {
                       <Label htmlFor="empPass" className="text-slate-300 text-xs font-semibold">
                         Choose Password
                       </Label>
-                      <Input
-                        id="empPass"
-                        type="password"
-                        placeholder="••••••••"
-                        value={empPassword}
-                        onChange={(e) => setEmpPassword(e.target.value)}
-                        disabled={isPending}
-                        className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all rounded-lg text-sm"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="empPass"
+                          type={showEmpPass ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={empPassword}
+                          onChange={(e) => setEmpPassword(e.target.value)}
+                          disabled={isPending}
+                          className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all rounded-lg text-sm pr-10 w-full"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowEmpPass(!showEmpPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                        >
+                          {showEmpPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="empConfirmPass" className="text-slate-300 text-xs font-semibold">
                         Confirm Password
                       </Label>
-                      <Input
-                        id="empConfirmPass"
-                        type="password"
-                        placeholder="••••••••"
-                        value={empConfirmPassword}
-                        onChange={(e) => setEmpConfirmPassword(e.target.value)}
-                        disabled={isPending}
-                        className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all rounded-lg text-sm"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="empConfirmPass"
+                          type={showEmpConfirmPass ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={empConfirmPassword}
+                          onChange={(e) => setEmpConfirmPassword(e.target.value)}
+                          disabled={isPending}
+                          className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all rounded-lg text-sm pr-10 w-full"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowEmpConfirmPass(!showEmpConfirmPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                        >
+                          {showEmpConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -262,8 +313,8 @@ export default function SignupPage() {
               <CardContent>
                 <form onSubmit={handleHRSignedUp} className="space-y-4">
                   {/* Company Info Row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="sm:col-span-2 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <Label htmlFor="companyName" className="text-slate-300 text-xs font-semibold">
                         Company Name
                       </Label>
@@ -278,36 +329,21 @@ export default function SignupPage() {
                         required
                       />
                     </div>
-                    {/* Mock Logo Selector (Matches Excalidraw upload logo button) */}
-                    <div className="space-y-2 flex flex-col justify-end">
-                      <Label className="text-slate-300 text-xs font-semibold mb-2">Company Logo</Label>
-                      {companyLogoUrl ? (
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={companyLogoUrl}
-                            alt="Logo preview"
-                            className="w-9 h-9 rounded-lg object-cover border border-slate-800"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setCompanyLogoUrl('')}
-                            className="text-[10px] text-red-400 underline hover:text-red-300"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleGenerateMockLogo}
-                          disabled={isPending}
-                          className="border-slate-800 hover:bg-slate-900 text-slate-300 hover:text-white flex items-center justify-center gap-1.5 h-[36px] w-full text-xs rounded-lg cursor-pointer"
-                        >
-                          <Upload className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Upload</span>
-                        </Button>
-                      )}
+                    <div className="space-y-2">
+                      <Label htmlFor="companyLogo" className="text-slate-300 text-xs font-semibold">
+                        Company Logo
+                      </Label>
+                      <input
+                        id="companyLogo"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null
+                          setLogoFile(file)
+                        }}
+                        disabled={isPending}
+                        className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 file:cursor-pointer bg-slate-900/60 border border-slate-800 rounded-lg p-1"
+                      />
                     </div>
                   </div>
 
@@ -367,31 +403,50 @@ export default function SignupPage() {
                       <Label htmlFor="hrPass" className="text-slate-300 text-xs font-semibold">
                         Choose Password
                       </Label>
-                      <Input
-                        id="hrPass"
-                        type="password"
-                        placeholder="••••••••"
-                        value={hrPassword}
-                        onChange={(e) => setHrPassword(e.target.value)}
-                        disabled={isPending}
-                        className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all rounded-lg text-sm"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="hrPass"
+                          type={showHRPass ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={hrPassword}
+                          onChange={(e) => setHrPassword(e.target.value)}
+                          disabled={isPending}
+                          className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-650 transition-all rounded-lg text-sm pr-10 w-full"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowHRPass(!showHRPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                        >
+                          {showHRPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="hrConfirmPass" className="text-slate-300 text-xs font-semibold">
                         Confirm Password
                       </Label>
-                      <Input
-                        id="hrConfirmPass"
-                        type="password"
-                        placeholder="••••••••"
-                        value={hrConfirmPassword}
-                        onChange={(e) => setHrConfirmPassword(e.target.value)}
-                        disabled={isPending}
-                        className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-600 transition-all rounded-lg text-sm"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="hrConfirmPass"
+                          type={showHRConfirmPass ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={hrConfirmPassword}
+                          onChange={(e) => setHrConfirmPassword(e.target.value)}
+                          disabled={isPending}
+                          className="bg-slate-900/60 border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-100 placeholder:text-slate-655 transition-all rounded-lg text-sm pr-10 w-full"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowHRConfirmPass(!showHRConfirmPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                        >
+                          {showHRConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

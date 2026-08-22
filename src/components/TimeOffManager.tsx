@@ -121,11 +121,21 @@ export default function TimeOffManager({
     toast.success('Certificate uploaded successfully!')
   }
 
-  // Handle Request Submit
   const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault()
     if (!startDate || !endDate || computedDays === 0) {
       toast.error('Please enter a valid date range.')
+      return
+    }
+
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+    if (startDate < todayStr) {
+      toast.error('Start date must be either today or a future date.')
+      return
+    }
+
+    if (endDate < startDate) {
+      toast.error('End date must be on or after the start date.')
       return
     }
 
@@ -374,6 +384,7 @@ export default function TimeOffManager({
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
+                        min={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}
                         disabled={isPending}
                         className="bg-slate-950/60 border-slate-800 text-slate-100 rounded-xl text-xs h-9"
                         required
@@ -386,6 +397,7 @@ export default function TimeOffManager({
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
+                        min={startDate || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}
                         disabled={isPending}
                         className="bg-slate-950/60 border-slate-800 text-slate-100 rounded-xl text-xs h-9"
                         required

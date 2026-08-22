@@ -46,7 +46,7 @@ export async function onboardEmployee(formData: FormData): Promise<OnboardResult
     const department = formData.get('department') as string || null
     const managerId = formData.get('managerId') as string || null
     const location = formData.get('location') as string || null
-    const dateOfJoiningStr = formData.get('dateOfJoining') as string || new Date().toISOString().split('T')[0]
+    const dateOfJoiningStr = formData.get('dateOfJoining') as string || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
     const monthlyWage = parseFloat(formData.get('monthlyWage') as string || '0')
 
     if (!name || !email) {
@@ -172,5 +172,94 @@ export async function onboardEmployee(formData: FormData): Promise<OnboardResult
   } catch (error: any) {
     console.error('onboardEmployee catch:', error)
     return { success: false, message: error.message || 'An unexpected error occurred.' }
+  }
+}
+
+/**
+ * Update Company Details (Admin only)
+ */
+export async function updateCompanyDetails(
+  formData: FormData
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, message: 'Unauthorized.' }
+
+    // Check if user is Admin and get their company_id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'Admin') {
+      return { success: false, message: 'Only Admins can update company settings.' }
+    }
+
+    const companyId = profile.company_id
+    const name = formData.get('companyName') as string
+    const logoFile = formData.get('logoFile') as File | null
+
+    if (!name) {
+      return { success: false, message: 'Company Name is required.' }
+    }
+
+    const adminSupabase = createAdminClient()
+    let logoUrl: string | null = null
+
+    // Get current logo url in case they don't upload a new one
+    const { data: existingCompany } = await adminSupabase
+      .from('companies')
+      .select('logo_url')
+      .eq('id', companyId)
+      .single()
+
+    if (existingCompany) {
+      logoUrl = existingCompany.logo_url
+    }
+
+    // Upload logo file if provided
+    if (logoFile && logoFile.size > 0) {
+      try {
+        await adminSupabase.storage.createBucket('logos', { public: true })
+      } catch (e) {
+        // Ignore if exists
+      }
+
+      const fileExt = logoFile.name.split('.').pop() || 'png'
+      const fileName = `${Math.random().toString(36).slice(2)}.${fileExt}`
+      const fileBuffer = Buffer.from(await logoFile.arrayBuffer())
+
+      const { data: uploadData, error: uploadError } = await adminSupabase.storage
+        .from('logos')
+        .upload(fileName, fileBuffer, {
+          contentType: logoFile.type,
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = adminSupabase.storage
+          .from('logos')
+          .getPublicUrl(fileName)
+        logoUrl = publicUrl
+      } else {
+        console.error('Logo upload error:', uploadError)
+      }
+    }
+
+    const { error } = await adminSupabase
+      .from('companies')
+      .update({ name, logo_url: logoUrl })
+      .eq('id', companyId)
+
+    if (error) throw error
+
+    revalidatePath('/dashboard')
+    return { success: true, message: 'Company settings updated successfully!' }
+  } catch (error: any) {
+    console.error('updateCompanyDetails error:', error)
+    return { success: false, message: error.message || 'Failed to update company settings.' }
   }
 }

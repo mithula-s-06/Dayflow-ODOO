@@ -34,7 +34,9 @@ import {
   Briefcase,
   DollarSign,
   Award,
-  UserCheck
+  UserCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 
 // Dummy textarea if not installed, or import standard input
@@ -129,6 +131,8 @@ export default function ProfileDetails({
   // --- Security Tab (Change Password) States ---
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showNewPass, setShowNewPass] = useState(false)
+  const [showConfirmPass, setShowConfirmPass] = useState(false)
 
   // Split skills/certifications
   const skillItems = skills.filter(s => s.type === 'skill')
@@ -1191,30 +1195,48 @@ export default function ProfileDetails({
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="newPass" className="text-slate-350 text-xs font-semibold">New Password</Label>
-                  <Input
-                    id="newPass"
-                    type="password"
-                    placeholder="••••••••"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    disabled={isPending}
-                    className="bg-slate-950/60 border-slate-800 text-slate-100 rounded-xl text-xs h-9"
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="newPass"
+                      type={showNewPass ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={isPending}
+                      className="bg-slate-955/60 border-slate-800 text-slate-100 rounded-xl text-xs h-9 pr-10 w-full"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPass(!showNewPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                    >
+                      {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="confirmPass" className="text-slate-350 text-xs font-semibold">Confirm Password</Label>
-                  <Input
-                    id="confirmPass"
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={isPending}
-                    className="bg-slate-950/60 border-slate-800 text-slate-100 rounded-xl text-xs h-9"
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirmPass"
+                      type={showConfirmPass ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={isPending}
+                      className="bg-slate-955/60 border-slate-800 text-slate-100 rounded-xl text-xs h-9 pr-10 w-full"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPass(!showConfirmPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                    >
+                      {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <Button
