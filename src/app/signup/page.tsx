@@ -272,8 +272,8 @@ export default function SignupPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400 leading-normal">
-                    <AlertCircle className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-950/25 border border-rose-900/40 text-[11px] text-rose-300 leading-normal">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                     <span>
                       <strong>Notice:</strong> Your HR department must create your profile placeholder before you can activate your login. Your Employee ID and Email must match the details provided by your manager.
                     </span>

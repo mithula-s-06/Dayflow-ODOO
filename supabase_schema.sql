@@ -52,6 +52,7 @@ CREATE TABLE profiles (
     about TEXT,
     what_i_love TEXT,
     interests TEXT,
+    is_activated BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

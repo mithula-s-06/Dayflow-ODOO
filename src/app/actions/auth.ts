@@ -123,6 +123,7 @@ export async function signUpHR(formData: FormData): Promise<AuthResponse> {
         name,
         phone,
         role: 'Admin',
+        is_activated: true, // Admin is activated immediately
         date_of_joining: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }),
       })
 
@@ -201,6 +202,17 @@ export async function activateEmployee(formData: FormData): Promise<AuthResponse
       return { success: false, message: 'Failed to register account credentials.' }
     }
 
+    // 3. Mark profile as activated in database
+    const { error: activateError } = await adminSupabase
+      .from('profiles')
+      .update({ is_activated: true })
+      .eq('id', profile.id)
+
+    if (activateError) {
+      console.error('Mark employee activated error:', activateError)
+      return { success: false, message: 'Failed to activate profile.' }
+    }
+
     // 3. Resend verification email to the user
     const supabase = await createClient()
     const { error: verificationError } = await supabase.auth.resend({
@@ -240,13 +252,14 @@ export async function signIn(formData: FormData): Promise<AuthResponse> {
 
   try {
     let email = loginInput.trim()
+    let isActivated = true
 
     // 1. If it's not an email, lookup profile by Login ID (Employee ID)
     if (!email.includes('@')) {
       const adminSupabase = createAdminClient()
       const { data: profile, error: profileError } = await adminSupabase
         .from('profiles')
-        .select('email')
+        .select('email, is_activated')
         .eq('login_id', email.toUpperCase())
         .single()
 
@@ -254,6 +267,22 @@ export async function signIn(formData: FormData): Promise<AuthResponse> {
         return { success: false, message: 'Invalid Login ID or password.' }
       }
       email = profile.email
+      isActivated = profile.is_activated
+    } else {
+      const adminSupabase = createAdminClient()
+      const { data: profile, error: profileError } = await adminSupabase
+        .from('profiles')
+        .select('is_activated')
+        .eq('email', email.toLowerCase())
+        .single()
+
+      if (!profileError && profile) {
+        isActivated = profile.is_activated
+      }
+    }
+
+    if (!isActivated) {
+      return { success: false, message: 'Please activate your account first by choosing a new password.' }
     }
 
     // 2. Sign in with Email and Password

@@ -4,6 +4,7 @@ import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ProfileWithCompany, addSkill, deleteSkill, updateProfileResume, updatePrivateInfo, updateSalaryConfig } from '@/app/actions/profile'
 import { changePassword } from '@/app/actions/auth'
+import { deleteEmployee } from '@/app/actions/admin'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -83,6 +84,23 @@ export default function ProfileDetails({
   const isAdmin = currentUser.role === 'Admin'
   const canEditAll = isAdmin
   const canEditContact = isOwner || isAdmin
+
+  const handleDeleteProfile = () => {
+    if (!window.confirm(`Are you absolutely sure you want to delete ${viewedProfile.name}? This will permanently remove their account and all associated records (attendance, time off, salary configs, etc.).`)) {
+      return
+    }
+
+    startTransition(async () => {
+      const res = await deleteEmployee(viewedProfile.id)
+      if (res.success) {
+        toast.success(res.message)
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        toast.error(res.message)
+      }
+    })
+  }
 
   // --- Resume Tab States ---
   const [isEditingResume, setIsEditingResume] = useState(false)
@@ -298,6 +316,29 @@ export default function ProfileDetails({
       <Card className="glass border-slate-900 rounded-3xl relative overflow-hidden p-6 sm:p-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
         
+        {isAdmin && !isOwner && (
+          <div className="absolute top-6 right-6 z-20">
+            <Button
+              variant="outline"
+              onClick={handleDeleteProfile}
+              disabled={isPending}
+              className="border-rose-900/50 hover:bg-rose-950/20 text-rose-400 hover:text-rose-350 text-xs px-3.5 h-9 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-rose-950/20"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Profile</span>
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
         <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
           {/* Avatar Picture (with pencil hover) */}
           <div className="relative group shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden flex items-center justify-center">

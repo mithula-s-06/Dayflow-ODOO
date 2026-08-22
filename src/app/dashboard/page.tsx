@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   // 2. Render Admin or Employee dashboard based on role
   if (profile.role === 'Admin') {
     const employees = await getEmployeesWithStatus()
-    return <AdminDashboard initialEmployees={employees} />
+    return <AdminDashboard initialEmployees={employees} currentUserId={profile.id} />
   } else {
     // Fetch leave allocations balance
     const { data: leaveBalances } = await supabase

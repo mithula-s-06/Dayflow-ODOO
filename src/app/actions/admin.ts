@@ -127,6 +127,7 @@ export async function onboardEmployee(formData: FormData): Promise<OnboardResult
         manager_id: managerId || null,
         location,
         date_of_joining: dateOfJoiningStr,
+        is_activated: false,
       })
 
     if (profileError) {
@@ -261,5 +262,50 @@ export async function updateCompanyDetails(
   } catch (error: any) {
     console.error('updateCompanyDetails error:', error)
     return { success: false, message: error.message || 'Failed to update company settings.' }
+  }
+}
+
+/**
+ * Deletes an employee's account and profile (Admin only)
+ */
+export async function deleteEmployee(employeeId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const adminSupabase = createAdminClient()
+    const supabase = await createClient()
+
+    // 1. Verify current user is Admin
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) return { success: false, message: 'Unauthorized.' }
+
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single()
+
+    if (!currentProfile || currentProfile.role !== 'Admin') {
+      return { success: false, message: 'Only Admins/HR Officers can delete employees.' }
+    }
+
+    // 2. Prevent self-deletion
+    if (employeeId === currentUser.id) {
+      return { success: false, message: 'You cannot delete your own account.' }
+    }
+
+    // 3. Delete from Supabase Auth (cascades deletion to profile and all foreign tables)
+    const { error: authError } = await adminSupabase.auth.admin.deleteUser(employeeId)
+    if (authError) {
+      console.error('Admin delete user auth error:', authError)
+      return { success: false, message: authError.message || 'Failed to delete employee account.' }
+    }
+
+    // Secondary fallback in case cascade was delayed
+    await adminSupabase.from('profiles').delete().eq('id', employeeId)
+
+    revalidatePath('/dashboard')
+    return { success: true, message: 'Employee successfully deleted.' }
+  } catch (error: any) {
+    console.error('deleteEmployee error:', error)
+    return { success: false, message: error.message || 'An unexpected error occurred.' }
   }
 }

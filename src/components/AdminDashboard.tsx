@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmployeeWithStatus } from '@/app/actions/dashboard'
-import { onboardEmployee } from '@/app/actions/admin'
+import { onboardEmployee, deleteEmployee } from '@/app/actions/admin'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -37,14 +37,16 @@ import {
   Copy,
   CheckCircle,
   HelpCircle,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react'
 
 interface AdminDashboardProps {
   initialEmployees: EmployeeWithStatus[]
+  currentUserId: string
 }
 
-export default function AdminDashboard({ initialEmployees }: AdminDashboardProps) {
+export default function AdminDashboard({ initialEmployees, currentUserId }: AdminDashboardProps) {
   const router = useRouter()
   const [employees, setEmployees] = useState<EmployeeWithStatus[]>(initialEmployees)
   const [isPending, startTransition] = useTransition()
@@ -130,6 +132,25 @@ export default function AdminDashboard({ initialEmployees }: AdminDashboardProps
     const text = `Employee ID: ${credentials.id}\nTemporary Password: ${credentials.pass}\nLogin link: ${window.location.origin}/login`
     navigator.clipboard.writeText(text)
     toast.success('Credentials copied to clipboard!')
+  }
+
+  // Handle Employee Deletion from Card
+  const handleDelete = (e: React.MouseEvent, empId: string, empName: string) => {
+    e.stopPropagation() // Prevent card click navigation
+    if (!window.confirm(`Are you absolutely sure you want to delete ${empName}? This will permanently remove their account and all associated records.`)) {
+      return
+    }
+
+    startTransition(async () => {
+      const res = await deleteEmployee(empId)
+      if (res.success) {
+        toast.success(res.message)
+        setEmployees(employees.filter(emp => emp.id !== empId))
+        router.refresh()
+      } else {
+        toast.error(res.message)
+      }
+    })
   }
 
   // Filtered employees list
@@ -466,25 +487,39 @@ export default function AdminDashboard({ initialEmployees }: AdminDashboardProps
                   </div>
                 </div>
 
-                {/* Status Dot / Icon (Top Right Corner) */}
-                <div className="flex items-center justify-center p-1.5 rounded-lg bg-slate-950/60 border border-slate-900">
-                  {emp.todayStatus === 'Present' && (
-                    <span className="relative flex h-2.5 w-2.5" title="Present (Checked In)">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
+                <div className="flex items-center gap-1.5 relative z-20 shrink-0">
+                  {/* Trash Delete button */}
+                  {emp.id !== currentUserId && (
+                    <button
+                      onClick={(e) => handleDelete(e, emp.id, emp.name)}
+                      disabled={isPending}
+                      className="p-1.5 rounded-lg border border-rose-900/30 bg-rose-950/15 hover:border-rose-900/60 hover:bg-rose-950/25 text-rose-400 hover:text-rose-350 transition-colors cursor-pointer h-7 w-7 flex items-center justify-center"
+                      title="Delete Employee"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   )}
-                  {emp.todayStatus === 'Present-completed' && (
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-800" title="Present (Checked Out)" />
-                  )}
-                  {emp.todayStatus === 'Leave' && (
-                    <span title="On Leave">
-                      <Plane className="w-3.5 h-3.5 text-indigo-400 animate-bounce" />
-                    </span>
-                  )}
-                  {emp.todayStatus === 'Absent' && (
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" title="Absent" />
-                  )}
+
+                  {/* Status Dot / Icon (Top Right Corner) */}
+                  <div className="flex items-center justify-center p-1.5 rounded-lg bg-slate-950/60 border border-slate-900 h-7 w-7">
+                    {emp.todayStatus === 'Present' && (
+                      <span className="relative flex h-2 w-2" title="Present (Checked In)">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                    )}
+                    {emp.todayStatus === 'Present-completed' && (
+                      <span className="h-2 w-2 rounded-full bg-emerald-800" title="Present (Checked Out)" />
+                    )}
+                    {emp.todayStatus === 'Leave' && (
+                      <span title="On Leave">
+                        <Plane className="w-3.5 h-3.5 text-indigo-400 animate-bounce" />
+                      </span>
+                    )}
+                    {emp.todayStatus === 'Absent' && (
+                      <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" title="Absent" />
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -598,7 +598,7 @@ export default function TimeOffManager({
           ============================================================= */}
       {role === 'Admin' && (
         <div className="space-y-6">
-          <h3 className="text-sm font-heading font-black text-slate-200">Pending Leave Approvals Queue</h3>
+          <h3 className="text-sm font-heading font-black text-slate-200">Employee Leave Approvals Queue</h3>
 
           <Card className="glass border-slate-900 rounded-2xl overflow-hidden p-2">
             <Table>
@@ -615,16 +615,16 @@ export default function TimeOffManager({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requests.filter(r => r.status === 'Pending').length === 0 ? (
+                {requests.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell colSpan={8} className="py-12 text-center text-slate-500 text-xs font-semibold">
                       <CheckCircle className="w-8 h-8 text-emerald-600/80 mx-auto mb-2" />
-                      <span>All leave requests resolved. No pending approvals!</span>
+                      <span>No leave requests submitted yet.</span>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  requests.filter(r => r.status === 'Pending').map((req) => (
-                    <TableRow key={req.id} className="border-b border-slate-900/60 hover:bg-slate-900/20 text-xs font-semibold">
+                  requests.map((req) => (
+                    <TableRow key={req.id} className="border-b border-slate-900/60 hover:bg-slate-900/20 text-xs font-semibold animate-fade-in">
                       <TableCell className="text-slate-100 font-bold">
                         <div>
                           <span>{req.profile?.name}</span>
@@ -653,43 +653,59 @@ export default function TimeOffManager({
                         )}
                       </TableCell>
                       
-                      {/* Comments Input */}
+                      {/* Comments Column */}
                       <TableCell>
-                        <Input
-                          type="text"
-                          placeholder="Add comments..."
-                          value={adminCommentsMap[req.id] || ''}
-                          onChange={(e) => setAdminCommentsMap({
-                            ...adminCommentsMap,
-                            [req.id]: e.target.value
-                          })}
-                          disabled={isPending}
-                          className="bg-slate-950/60 border-slate-800 text-slate-100 placeholder:text-slate-650 rounded-xl text-xs h-[30px] w-[150px] font-medium"
-                        />
+                        {req.status === 'Pending' ? (
+                          <Input
+                            type="text"
+                            placeholder="Add comments..."
+                            value={adminCommentsMap[req.id] || ''}
+                            onChange={(e) => setAdminCommentsMap({
+                              ...adminCommentsMap,
+                              [req.id]: e.target.value
+                            })}
+                            disabled={isPending}
+                            className="bg-slate-950/60 border-slate-800 text-slate-100 placeholder:text-slate-650 rounded-xl text-xs h-[30px] w-[150px] font-medium"
+                          />
+                        ) : (
+                          <span className="text-slate-400 italic text-[11px] font-medium max-w-[150px] block truncate" title={req.admin_comments || ''}>
+                            {req.admin_comments || '--'}
+                          </span>
+                        )}
                       </TableCell>
-
-                      {/* Approval Buttons */}
+ 
+                      {/* Actions Column */}
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(req.id)}
-                            disabled={isPending}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 h-7 w-7 rounded-lg flex items-center justify-center cursor-pointer"
-                            title="Approve"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleReject(req.id)}
-                            disabled={isPending}
-                            className="bg-rose-600 hover:bg-rose-500 text-white p-2 h-7 w-7 rounded-lg flex items-center justify-center cursor-pointer"
-                            title="Reject"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
+                        {req.status === 'Pending' ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleApprove(req.id)}
+                              disabled={isPending}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 h-7 w-7 rounded-lg flex items-center justify-center cursor-pointer"
+                              title="Approve"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleReject(req.id)}
+                              disabled={isPending}
+                              className="bg-rose-600 hover:bg-rose-500 text-white p-2 h-7 w-7 rounded-lg flex items-center justify-center cursor-pointer"
+                              title="Reject"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
+                            req.status === 'Approved'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}>
+                            {req.status}
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

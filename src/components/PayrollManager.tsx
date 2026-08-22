@@ -155,33 +155,39 @@ export default function PayrollManager() {
       {/* 1. TOP CONTROLS PANEL */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/40 p-4 border border-slate-900 rounded-2xl backdrop-blur-md">
         
-        {/* Month Selector */}
-        <div className="flex items-center gap-3">
-          <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v || '1'))}>
-            <SelectTrigger className="w-[130px] bg-slate-950/60 border-slate-800 text-slate-200 text-xs rounded-xl h-[38px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 rounded-xl">
-              {months.map((m, i) => (
-                <SelectItem key={i} value={(i + 1).toString()} className="text-xs">
-                  {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Month & Year Selectors with Labels */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Month</span>
+            <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v || '1'))}>
+              <SelectTrigger className="w-[130px] bg-slate-950/60 border-slate-800 text-slate-200 text-xs rounded-xl h-[38px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 rounded-xl">
+                {months.map((m, i) => (
+                  <SelectItem key={i} value={(i + 1).toString()} className="text-xs">
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v || '2026'))}>
-            <SelectTrigger className="w-[100px] bg-slate-955/60 border-slate-800 text-slate-200 text-xs rounded-xl h-[38px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 rounded-xl">
-              {years.map(y => (
-                <SelectItem key={y} value={y.toString()} className="text-xs">
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Year</span>
+            <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v || '2026'))}>
+              <SelectTrigger className="w-[100px] bg-slate-950/60 border-slate-800 text-slate-200 text-xs rounded-xl h-[38px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 rounded-xl">
+                {years.map(y => (
+                  <SelectItem key={y} value={y.toString()} className="text-xs">
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Generate Button */}
